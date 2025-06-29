@@ -1,0 +1,47 @@
+name: Python package test
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: |
+          python -m test 2>&1 > test_output.txt
+
+      - name: Install CML
+        run: npm install -g @dvcorg/cml
+
+      - name: Create CML report
+        env:
+          REPO_TOKEN: ${{ secrets.CML_PAT }}
+        run: |
+          echo "## ✅ Test Results" > report.md
+          echo '```' >> report.md
+          cat test_output.txt >> report.md
+          echo '```' >> report.md
+
+          echo "## Training Metrics" >> report.md
+          cat metrics.csv >> report.md
+
+          cml comment create report.md
